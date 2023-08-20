@@ -1,0 +1,6 @@
+showNewVersionIcon: true
+hideAfterStartup: false
+randomControllerPort: false
+runTimeFormat: "hh : mm : ss"
+theme: 1
+shortcutSystemProxy: ""

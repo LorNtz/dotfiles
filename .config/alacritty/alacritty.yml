@@ -1,0 +1,149 @@
+live_config_reload: true
+
+alt_send_esc: false
+
+shell:
+  program: /opt/homebrew/bin/fish 
+  # add this config to start tmux at launch
+  # args:
+  #   - -l
+  #   - -c
+  #   - "tmux attach || tmux"
+
+cursor:
+  style:
+    shape: Block
+    blinking: Always
+window:
+  opacity: 0.85
+  padding:
+    x: 18
+    y: 16
+  dynamic_padding: false
+  decorations: buttonless
+  startup_mode: Maximized
+
+font:
+  # family: "Comic Code Ligatures"
+  # family: "FantasqueSansMono Nerd Font"
+   
+  # normal:
+  #   family: "SFMono Nerd Font"
+  #   style: Regular
+  # bold:
+  #   family: "SFMono Nerd Font"
+  #   style: Bold
+  # italic:
+  #   family: "SFMono Nerd Font"
+  #   style: Regular Italic
+
+  # normal:
+  #   family: "ComicCodeLigatures Nerd Font"
+  #   style: Regular
+  # bold:
+  #   family: "ComicCodeLigatures Nerd Font"
+  #   style: Bold
+  # italic:
+  #   family: "ComicCodeLigatures Nerd Font"
+  #   style: italic
+  # size: 20.0
+  # offset:
+  #   x: 0
+  #   y: 0
+      
+  normal:
+    family: "CaskaydiaCove Nerd Font"
+    style: Regular
+  bold:
+    family: "CaskaydiaCove Nerd Font"
+    style: Bold
+  italic:
+    family: "CaskaydiaCove Nerd Font"
+    style: italic
+      
+  # normal:
+  #   family: "CaskaydiaCoveNF Nerd Font"
+  #   style: Regular
+  # bold:
+  #   family: "CaskaydiaCoveNF Nerd Font"
+  #   style: Bold
+  # italic:
+  #   family: "CaskaydiaCoveNF Nerd Font"
+  #   style: italic
+
+  # normal:
+  #   family: "Hasklug Nerd Font"
+  #   style: SemiBold
+  # bold:
+  #   family: "Hasklug Nerd Font"
+  #   style: Bold
+  # italic:
+  #   family: "Hasklug Nerd Font"
+  #   style: italic
+
+  # normal:
+  #   family: "JetBrainsMono Nerd Font"
+  #   style: Regular
+  # bold:
+  #   family: "JetBrainsMono Nerd Font"
+  #   style: Bold
+  # italic:
+  #   family: "JetBrainsMono Nerd Font"
+  #   style: italic
+      
+  size: 22.0
+  offset:
+    x: 0
+    y: 2
+
+key_bindings:
+  - { key: Return, mods: Shift, chars: "\x1b[13;2u" }
+  - { key: Return, mods: Control, chars: "\x1b[13;5u" }
+  - { key: Up,       mods: Alt,     chars: "\x1b[1;5A"                   }
+  - { key: Down,     mods: Alt,     chars: "\x1b[1;5B"                   }
+  - { key: Left,     mods: Alt,     chars: "\x1bb"                       }
+  - { key: Right,    mods: Alt,     chars: "\x1bf"                       }
+  - { key: A,        mods: Alt,     chars: "\x1ba"                       }
+  - { key: B,        mods: Alt,     chars: "\x1bb"                       }
+  - { key: C,        mods: Alt,     chars: "\x1bc"                       }
+  - { key: D,        mods: Alt,     chars: "\x1bd"                       }
+  - { key: E,        mods: Alt,     chars: "\x1be"                       }
+  - { key: F,        mods: Alt,     chars: "\x1bf"                       }
+  - { key: G,        mods: Alt,     chars: "\x1bg"                       }
+  - { key: H,        mods: Alt,     chars: "\x1bh"                       }
+  - { key: I,        mods: Alt,     chars: "\x1bi"                       }
+  - { key: J,        mods: Alt,     chars: "\x1bj"                       }
+  - { key: K,        mods: Alt,     chars: "\x1bk"                       }
+  - { key: L,        mods: Alt,     chars: "\x1bl"                       }
+  - { key: M,        mods: Alt,     chars: "\x1bm"                       }
+  - { key: N,        mods: Alt,     chars: "\x1bn"                       }
+  - { key: O,        mods: Alt,     chars: "\x1bo"                       }
+  - { key: P,        mods: Alt,     chars: "\x1bp"                       }
+  - { key: Q,        mods: Alt,     chars: "\x1bq"                       }
+  - { key: R,        mods: Alt,     chars: "\x1br"                       }
+  - { key: S,        mods: Alt,     chars: "\x1bs"                       }
+  - { key: T,        mods: Alt,     chars: "\x1bt"                       }
+  - { key: U,        mods: Alt,     chars: "\x1bu"                       }
+  - { key: V,        mods: Alt,     chars: "\x1bv"                       }
+  - { key: W,        mods: Alt,     chars: "\x1bw"                       }
+  - { key: X,        mods: Alt,     chars: "\x1bx"                       }
+  - { key: Y,        mods: Alt,     chars: "\x1by"                       }
+  - { key: Z,        mods: Alt,     chars: "\x1bz"                       }
+  - { key: Key0,     mods: Alt,     chars: "º"                           }
+  - { key: Key1,     mods: Alt,     chars: "¡"                           }
+  - { key: Key2,     mods: Alt,     chars: "€"                           }
+  - { key: Key3,     mods: Alt,     chars: "#"                           }
+  - { key: Key4,     mods: Alt,     chars: "¢"                           }
+  - { key: Key5,     mods: Alt,     chars: "∞"                           }
+  - { key: Key6,     mods: Alt,     chars: "§"                           }
+  - { key: Key7,     mods: Alt,     chars: "¶"                           }
+  - { key: Key8,     mods: Alt,     chars: "•"                           }
+  - { key: Key9,     mods: Alt,     chars: "ª"                           }
+
+import:
+  # uncomment the flavour you want below:
+  - ~/.config/alacritty/catppuccin/catppuccin-mocha.yml
+#  - ~/.config/alacritty/catppuccin/catppuccin-macchiato.yml
+#  - ~/.config/alacritty/catppuccin/catppuccin-frappe.yml
+#  - ~/.config/alacritty/catppuccin/catppuccin-latte.yml
+
