@@ -7,6 +7,8 @@ a global executable or a path to
 an executable
 ]]
 
+require("nvim-treesitter.install").prefer_git = true
+
 local path = debug.getinfo(1, 'S').source
 local config_directory = string.match(path, '^(.*/).*.lua')
 package.path = package.path .. ';/Users/lorentz/.config/lvim/lua/user/?.lua'
@@ -44,6 +46,7 @@ vim.opt.ttimeoutlen = 10
 
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
+lvim.builtin.terminal.shell = 'fish'
 lvim.builtin.terminal.open_mapping = [[<C-Bslash>]]
 lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
 -- add your own keymapping
@@ -200,7 +203,10 @@ lvim.builtin.which_key.mappings["j"] = { "<cmd>TSJToggle<cr>", "Toggle code join
 lvim.builtin.which_key.mappings["m"] = {
   name = "+Mark",
   t = { "<cmd>HiMyWordsToggle<cr>", "Toggle mark on current word" },
-  c = { "<cmd>HiMyWordsClear<cr>", "Clear all marks" }
+  c = { "<cmd>HiMyWordsClear<cr>", "Clear all marks" },
+  f = { "<cmd>lua require('nvim-tree.api').marks.navigate.select()<cr>", "Find marked files" },
+  n = { "<cmd>lua require('nvim-tree.api').marks.navigate.next()<cr>", "Jump to next marked files" },
+  p = { "<cmd>lua require('nvim-tree.api').marks.navigate.prev()<cr>", "Jump to prev marked files" },
 }
 lvim.builtin.which_key.mappings["M"] = {
   name = "+Minimap",
@@ -353,6 +359,7 @@ lvim.builtin.treesitter.ensure_installed = {
   "rust",
   "java",
   "yaml",
+  "vue",
 }
 
 lvim.builtin.treesitter.ignore_install = { "haskell" }
@@ -382,8 +389,8 @@ lvim.builtin.treesitter.highlight.enable = true
 -- vim.list_extend(lvim.lsp.automatic_configuration.skipped_servers, { "pyright" })
 -- local opts = {} -- check the lspconfig documentation for a list of all possible options
 -- require("lvim.lsp.manager").setup("pyright", opts)
-local lspconfig_util = require('lspconfig/util')
-local root_pattern = lspconfig_util.root_pattern
+local lspconfig = require('lspconfig')
+local root_pattern = lspconfig.util.root_pattern
 local lsp_manager = require('lvim.lsp.manager')
 lsp_manager.setup('tsserver', {
   cmd = { "typescript-language-server", "--stdio" },
@@ -399,7 +406,16 @@ lsp_manager.setup('tsserver', {
 })
 
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
+capabilities.textDocument.completion.completionItem.snippetSupport = true
+capabilities.textDocument.completion.completionItem.resolveSupport = {
+  properties = {
+    'documentation',
+    'detail',
+    'additionalTextEdits',
+  }
+}
 capabilities.textDocument.references = true
+
 lsp_manager.setup('flow', {
   cmd = { 'flow', 'lsp' },
   filetypes = { 'javascript', 'javascriptreact', 'javascript.jsx' },
@@ -423,6 +439,129 @@ lsp_manager.setup('flow', {
 lsp_manager.setup('eslint', {
   capabilities = capabilities
 })
+
+vim.filetype.add({
+  extension = {
+    mpx = 'mpx',
+    wxs = 'javascript'
+  }
+})
+
+vim.treesitter.language.register('vue', 'mpx')
+vim.treesitter.language.register('javascript', 'wxs')
+
+local configs = require('lspconfig.configs')
+if not configs.mpx_ls then
+  configs.mpx_ls = {
+    default_config = {
+      cmd = { 'vls' },
+      root_dir = lspconfig.util.root_pattern('package.json'),
+      filetypes = { 'mpx' },
+    },
+  }
+end
+lspconfig.mpx_ls.setup{
+  capabilities = capabilities,
+  cmd = { 'vls' },
+  filetypes = { 'mpx' },
+  root_dir = root_pattern('package.json'),
+  on_attach = function(client, bufnr)
+    --[[
+        Internal Vetur formatting is not supported out of the box
+
+        This line below is required if you:
+          - want to format using Nvim's native `vim.lsp.buf.formatting**()`
+          - want to use Vetur's formatting config instead, e.g, settings.vetur.format {...}
+    --]]
+    -- client.resolved_capabilities.document_formatting = true
+    local function buf_set_keymap(...) vim.api.nvim_buf_set_keymap(bufnr, ...) end
+    local function buf_set_option(...) vim.api.nvim_buf_set_option(bufnr, ...) end
+
+    buf_set_option('omnifunc', 'v:lua.vim.lsp.omnifunc')
+
+    local opts = { noremap = true, silent = true }
+
+    buf_set_keymap('n', 'K', '<cmd>lua vim.lsp.buf.hover()<cr>', opts)
+    buf_set_keymap('n', 'gD', '<cmd>lua vim.lsp.buf.declaration()<CR>', opts)
+    buf_set_keymap('n', 'gd', '<cmd>lua vim.lsp.buf.definition()<CR>', opts)
+    buf_set_keymap('n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>', opts)
+  end,
+  init_options = {
+    config = {
+      css = {},
+      emmet = {},
+      html = {
+        suggest = {}
+      },
+      javascript = {
+        format = {}
+      },
+      stylusSupremacy = {},
+      typescript = {
+        format = {}
+      },
+      mpx = {
+        completion = {
+          autoImport = false,
+          tagCasing = "kebab",
+          useScaffoldSnippets = false
+        },
+        format = {
+          defaultFormatter = {
+            js = "none",
+            ts = "none"
+          },
+          defaultFormatterOptions = {},
+          scriptInitialIndent = false,
+          styleInitialIndent = false
+        },
+        useWorkspaceDependencies = false,
+        validation = {
+          script = true,
+          style = true,
+          template = true
+        }
+      }
+    }
+  },
+  settings = {
+    css = {},
+    emmet = {},
+    html = {
+      suggest = {}
+    },
+    javascript = {
+      format = {}
+    },
+    stylusSupremacy = {},
+    typescript = {
+      format = {}
+    },
+    mpx = {
+      completion = {
+        autoImport = true,
+        useScaffoldSnippets = true
+      },
+      format = {
+        defaultFormatter = {
+          html = "none",
+          js = "prettier",
+          ts = "prettier",
+        }
+      },
+      validation = {
+        template = true,
+        script = true,
+        style = true,
+        templateProps = true,
+        interpolation = true
+      },
+      experimental = {
+        templateInterpolationService = true
+      }
+    }
+  },
+}
 
 -- ---remove a server from the skipped list, e.g. eslint, or emmet_ls. !!Requires `:LvimCacheReset` to take effect!!
 -- ---`:LvimInfo` lists which server(s) are skipped for the current filetype
@@ -511,7 +650,7 @@ lvim.plugins = {
   {
     "tpope/vim-surround",
     -- make sure to change the value of `timeoutlen` if it's not triggering correctly, see https://github.com/tpope/vim-surround/issues/117
-    -- setup = function()
+    -- init = function()
     --  vim.o.timeoutlen = 500
     -- end
   },
@@ -525,14 +664,14 @@ lvim.plugins = {
   },
   {
     "windwp/nvim-ts-autotag",
-    setup = function()
+    init = function()
       require("nvim-ts-autotag").setup()
     end
   },
   reload('user.extra-plugins.vista'),
   -- {
   --     "preservim/tagbar",
-  --     setup = function ()
+  --     init = function ()
   --         vim.g.tagbar_ctags_bin = ""
   --     end,
   -- },
@@ -569,13 +708,13 @@ lvim.plugins = {
 
   {
     'echasnovski/mini.animate',
-    setup = function ()
+    init = function ()
       require('mini.animate').setup()
     end
   },
   {
     'MattesGroeger/vim-bookmarks',
-    setup = function ()
+    init = function ()
       vim.g.bookmark_sign = ''
       vim.g.bookmark_annotation_sign = ''
       vim.g.bookmark_no_default_key_mappings = 0
@@ -586,12 +725,12 @@ lvim.plugins = {
   },
   {
     'tom-anders/telescope-vim-bookmarks.nvim',
-    setup = function ()
+    init = function ()
       
     end
   },
   {
-    "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
+    url = "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
     config = function()
       require("lsp_lines").setup()
       vim.diagnostic.config({
@@ -600,8 +739,11 @@ lvim.plugins = {
     end,
   },
   {
+    'kkharji/sqlite.lua'
+  },
+  {
     "ecthelionvi/NeoComposer.nvim",
-    requires = { "kkharji/sqlite.lua" },
+    dependencies = { "kkharji/sqlite.lua" },
     config = function ()
       require("NeoComposer").setup({
         notify = true,
