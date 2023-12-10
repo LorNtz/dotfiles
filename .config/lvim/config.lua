@@ -662,7 +662,7 @@ lvim.plugins = {
           ["select_down"] = "<C-j>",
         },
         use_api_key_from_config = true,
-        openai_api_key = "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",
+        openai_api_key = "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",
         open_api_key_env = "OPENAI_API_KEY",
         proxy_url = "localhost:7890",
         shortcuts = {
