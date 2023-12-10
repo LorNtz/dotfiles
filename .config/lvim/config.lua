@@ -986,6 +986,25 @@ lvim.plugins = {
           -- standalone file support
           -- setting it to false may improve startup time
           standalone = true,
+          on_attach = function(client, bufnr)
+            require("lvim.lsp").common_on_attach(client, bufnr)
+            -- Hover actions
+            vim.keymap.set("n", "K", rt.hover_actions.hover_actions, { buffer = bufnr })
+          end,
+          on_init = require("lvim.lsp").common_on_init,
+          capabilities = require("lvim.lsp").common_capabilities(),
+          settings = {
+            ["rust-analyzer"] = {
+              inlayHints = { locationLinks = false },
+              lens = {
+                enable = true,
+              },
+              checkOnSave = {
+                enable = true,
+                command = "clippy",
+              },
+            },
+          },
         }, -- rust-analyzer options
 
         -- debugging stuff
