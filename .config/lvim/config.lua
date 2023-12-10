@@ -276,6 +276,24 @@ lvim.builtin.which_key.mappings["r"] = {
       taskTerm:toggle()
     end,
     "Jest"
+  },
+  s = {
+    function ()
+      local Terminal = require('toggleterm.terminal').Terminal
+      local path = vim.api.nvim_buf_get_name(0)
+      local taskTerm = Terminal:new({
+        cmd = 'bash ' .. path,
+        direction = "float",
+        hidden = true,
+        close_on_exit = false,
+        float_opts = {
+          width = 100,
+          height = 20,
+        },
+      })
+      taskTerm:toggle()
+    end,
+    'Bash'
   }
 }
 lvim.builtin.which_key.mappings["R"] = { "<cmd>RnvimrToggle<cr>", "Ranger" }
