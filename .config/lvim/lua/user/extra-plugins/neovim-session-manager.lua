@@ -1,8 +1,8 @@
 return {
-  'Shatur/neovim-session-manager',
+  'LorNtz/neovim-session-manager',
   config = function ()
     require('session_manager').setup({
-      sessions_dir = '/Users/lorentz/.nvimsessions/', -- The directory where the session files will be saved.
+      sessions_dir = '/Users/didi/.nvimsessions/', -- The directory where the session files will be saved.
       path_replacer = '__', -- The character to which the path separator will be replaced for session files.
       colon_replacer = '++', -- The character to which the colon symbol will be replaced for session files.
       autoload_mode = require('session_manager.config').AutoloadMode.Disabled, -- Define what to do when Neovim is started without arguments. Possible values: Disabled, CurrentDir, LastSession

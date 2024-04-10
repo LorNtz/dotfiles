@@ -44,6 +44,9 @@ vim.opt.relativenumber = true
 vim.opt.ttimeout = true
 vim.opt.ttimeoutlen = 10
 
+vim.o.grepprg = 'rg --vimgrep --no-heading --smart-case'
+vim.opt.grepformat:append({ '%f:%l:%c:%m' })
+
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
 lvim.builtin.terminal.shell = 'fish'
@@ -69,11 +72,13 @@ lvim.keys.normal_mode["gR"] = "<cmd>TroubleToggle lsp_references<cr>"
 -- lvim.keys.normal_mode["^M"] = "O<Esc>"
 
 -- keymapping for toggling floating terminal
-lvim.keys.insert_mode["<C-t>"] = ":ToggleTerm direction=float<CR>"
-lvim.keys.normal_mode["<C-t>"] = ":ToggleTerm direction=float<CR>"
+lvim.keys.insert_mode["<C-t>"] = "<cmd>ToggleTerm direction=float<CR>"
+lvim.keys.normal_mode["<C-t>"] = "<cmd>ToggleTerm direction=float<CR>"
 lvim.keys.term_mode["<C-t>"] = "<C-\\><C-n><C-w>l"
-lvim.keys.normal_mode["tt"] = ":ToggleTerm direction=float<CR>"
-lvim.keys.term_mode["tt"] = "<C-\\><C-n><C-w>l"
+lvim.keys.normal_mode["tt"] = "<cmd>1ToggleTerm direction=float<CR>"
+lvim.keys.term_mode["tt"] = "<C-\\><C-n><C-w>k"
+lvim.keys.term_mode["<C-n>"] = "<C-\\><C-n>"
+lvim.keys.normal_mode["gt"] = "<cmd>2ToggleTerm direction=horizontal size=10<CR>"
 
 -- unmap a default keymapping
 -- vim.keymap.del("n", "<C-Up>")
@@ -127,6 +132,15 @@ lvim.builtin.which_key.mappings["A"] = {
   },
   t = { "<cmd>NeoAIToggle<cr>", "Toggle ChatGPT chat UI" },
 }
+lvim.builtin.which_key.mappings["b"].F = {
+  "<cmd>tabe %<cr>", "Open this buffer in new tab"
+}
+lvim.builtin.which_key.mappings["b"]["v"] = {
+  "<cmd>vsplit<cr>", "Vertical split"
+}
+lvim.builtin.which_key.mappings["b"]["-"] = {
+  "<cmd>split<cr>", "Horizontal split"
+}
 lvim.builtin.which_key.mappings["B"] = {
   name = "+Bookmark",
   a = { "<cmd>BookmarkAnnotate<cr>", "Add/edit/remove annotation bookmark" },
@@ -139,6 +153,47 @@ lvim.builtin.which_key.mappings["D"] = {
   l = { "<cmd>lua require('lsp_lines').toggle()<cr>", "Toggle diagnostics in virtual lines" },
   s = { "<cmd>lua vim.diagnostic.open_float()<cr>", "Show diagnostics for current line" },
 }
+
+local last_pattern = ''
+local last_include_dir = 'src'
+local last_glob = '*'
+local find_text_occurrence = function ()
+  vim.ui.input(
+    { prompt = 'Search Pattern?', default = last_pattern },
+    function (pattern)
+      if pattern == nil or pattern == '' then
+        return
+      end
+      vim.ui.input(
+        { prompt = 'Where to Find?', default = last_include_dir },
+        function (includes)
+          if includes == nil then
+            return
+          end
+          vim.ui.input(
+            { prompt = 'File glob pattern?', default = last_glob},
+            function (glob)
+              last_pattern = pattern
+              last_include_dir = includes
+              last_glob = glob
+              local search_cmd = 'silent! lgrep! ' .. pattern .. ' ' .. includes
+              if glob ~= nil then
+                search_cmd = search_cmd .. ' -g' .. glob
+              end
+              local result = vim.api.nvim_command_output(search_cmd)
+              local did_found = result.match(result, 'Error') == nil
+              if did_found then
+                vim.cmd('Trouble loclist')
+              else
+                vim.notify('No result found')
+              end
+            end
+          )
+        end
+      )
+    end)
+end
+
 lvim.builtin.which_key.mappings["f"] = {
   name = "+Find",
   c = { "<cmd>Telescope current_buffer_fuzzy_find<cr>", "Current buffer" },
@@ -152,8 +207,12 @@ lvim.builtin.which_key.mappings["f"] = {
   f = { "<cmd>Telescope find_files<cr>", "Files" },
   g = { "<cmd>Telescope live_grep<cr>", "Live grep" },
   p = { "<cmd>Telescope fd<cr>", "Files with preview" },
-  s = { "<cmd>Telescope treesitter<cr>", "Treesitter symbols" },
   r = { "<cmd>Telescope oldfiles<cr>", "Recent files" },
+  s = { "<cmd>Telescope treesitter<cr>", "Treesitter symbols" },
+  t = {
+    find_text_occurrence,
+    "Text occurrence",
+  },
   l = {
     name = "+LSP",
     r = { "<cmd>Telescope lsp_references<cr>", "References" },
@@ -167,6 +226,26 @@ lvim.builtin.which_key.mappings["f"] = {
     h = { "<cmd>Telescope help_tags<cr>", "Help tags" },
     r = { "<cmd>Telescope registers<cr>", "Registers" },
   },
+}
+lvim.builtin.which_key.mappings.g["O"] = {
+  name = "+Others",
+  u = {
+    function ()
+      local Terminal = require('toggleterm.terminal').Terminal
+      local gituiTerm = Terminal:new({
+        cmd = "gitui",
+        direction = "float",
+        hidden = true,
+        float_opts = {
+          border = "none",
+          width = 100000,
+          height = 100000,
+        },
+      })
+      gituiTerm:toggle()
+    end,
+    "gitui"
+  }
 }
 lvim.builtin.which_key.mappings["G"] = {
   name = "+Global commands",
@@ -221,24 +300,28 @@ end, "Toggle Node Action" }
 lvim.builtin.which_key.mappings["o"] = { "<cmd>SymbolsOutline<cr>", "Outline" }
 lvim.builtin.which_key.mappings["O"] = {
   name = "+Others",
-  h = { function ()
-    local Terminal = require('toggleterm.terminal').Terminal
-    local htopTerm = Terminal:new({
-      cmd = "htop",
-      direction = "float",
-      hidden = true,
-      float_opts = {
-        border = "none",
-        width = 100000,
-        height = 100000,
-      },
-    })
-    htopTerm:toggle()
-  end, "Toggle htop" },
+  h = {
+    function ()
+      local Terminal = require('toggleterm.terminal').Terminal
+      local htopTerm = Terminal:new({
+        cmd = "htop",
+        direction = "float",
+        hidden = true,
+        float_opts = {
+          border = "none",
+          width = 100000,
+          height = 100000,
+        },
+      })
+      htopTerm:toggle()
+    end,
+    "Toggle htop"
+  }
 }
 lvim.builtin.which_key.mappings["r"] = {
   name = "+Run",
   n = {
+    -- TODO: refactor these keymappings
     function ()
       local extension = vim.fn.expand('%:e')
       local Terminal = require('toggleterm.terminal').Terminal
@@ -250,6 +333,8 @@ lvim.builtin.which_key.mappings["r"] = {
         command = "ts-node " .. path
       elseif extension == 'rs' then
         command = "cargo run"
+      elseif extension == 'sh' then
+        command = "bash" .. path
       end
       local taskTerm = Terminal:new({
         cmd = command,
@@ -282,24 +367,6 @@ lvim.builtin.which_key.mappings["r"] = {
       taskTerm:toggle()
     end,
     "Jest"
-  },
-  s = {
-    function ()
-      local Terminal = require('toggleterm.terminal').Terminal
-      local path = vim.api.nvim_buf_get_name(0)
-      local taskTerm = Terminal:new({
-        cmd = 'bash ' .. path,
-        direction = "float",
-        hidden = true,
-        close_on_exit = false,
-        float_opts = {
-          width = 100,
-          height = 20,
-        },
-      })
-      taskTerm:toggle()
-    end,
-    'Bash'
   }
 }
 lvim.builtin.which_key.mappings["R"] = { "<cmd>RnvimrToggle<cr>", "Ranger" }
@@ -325,6 +392,10 @@ lvim.builtin.which_key.mappings["v"] = {
   v = { "<cmd>Vista nvim_lsp<cr>", "Open vista" },
   c = { "<cmd>Vista!<cr>", "Close vista" }
 }
+lvim.builtin.which_key.mappings["W"] = {
+  name = "+Window",
+  c = { "<c-w>c", "Close current window" }
+}
 lvim.builtin.which_key.mappings["x"] = { "<cmd>e!<cr>", " Discard all changes of current file" }
 lvim.builtin.which_key.mappings["y"] = { "ggyG<C-o>", "Copy content of current file" }
 
@@ -337,16 +408,61 @@ lvim.builtin.which_key.vmappings["s"] = {
     vim.api.nvim_feedkeys('y', 'n', false) -- copy selected lines
     vim.schedule(function ()
       local startno = vim.fn.line("'<")
+      local endno = vim.fn.line("'>")
       local path = vim.api.nvim_buf_get_name(0)
       local cwd = vim.fn.getcwd() .. '/'
       local filename = string.sub(path, string.len(cwd) + 1)
+      local branch = vim.fn.system('cd ' .. cwd .. ' && git branch --show-current 2> /dev/null | tr -d "\n"')
+      if branch ~= '' then
+        filename = filename .. ' on  ' .. branch
+      end
       local extension = vim.fn.expand('%:e')
-      local cmd = 'silicon --from-clipboard --to-clipboard -l ' .. extension .. ' --line-offset ' .. startno .. ' --window-title ' .. filename
-      os.execute(cmd)
-      local msg = string.format('Capture saved to the clipboard with title:\n"%s"', filename)
-      vim.notify(msg, vim.log.levels.INFO, {
-        title = 'Silicon'
-      })
+      vim.ui.input(
+        {
+          prompt = string.format('Lines to highlight (capturing lines %d - %d): (example:1;3-4)', startno, endno),
+          default = ''
+        },
+        function (range)
+          local addBaseToNumbers = function(str, base)
+            return str:gsub("(%d+)", function(match)
+              return tostring(tonumber(match) + base)
+            end)
+          end
+          range = addBaseToNumbers(range, -startno + 1)
+          if extension == 'mpx' then
+            vim.ui.select({ 'vue', 'ts', 'stylus' }, {
+              prompt = 'select a language highlight'
+            },
+              function (item)
+                if item then
+                  extension = item
+                else
+                  extension = 'vue'
+                end
+                local cmd = 'silicon --from-clipboard --to-clipboard -l ' .. extension .. ' --line-offset ' .. startno .. ' --window-title="' .. filename .. '"'
+                if (range ~= '' and range ~= nil) then
+                  cmd = cmd .. ' --highlight-lines ' .. '"' .. range .. '"'
+                end
+                os.execute(cmd)
+                local msg = string.format('Capture saved to the clipboard with title:\n"%s"', filename)
+                vim.notify(msg, vim.log.levels.INFO, {
+                  title = 'Silicon'
+                })
+              end
+            )
+          else
+            local cmd = 'silicon --from-clipboard --to-clipboard -l ' .. extension .. ' --line-offset ' .. startno .. ' --window-title="' .. filename .. '"'
+            if (range ~= '' and range ~= nil) then
+              cmd = cmd .. ' --highlight-lines ' .. '"' .. range .. '"'
+            end
+            os.execute(cmd)
+            local msg = string.format('Capture saved to the clipboard with title:\n"%s"', filename)
+            vim.notify(msg, vim.log.levels.INFO, {
+              title = 'Silicon'
+            })
+          end
+        end
+      )
     end)
   end, "Silicon Snapshot"
 }
@@ -362,6 +478,10 @@ lvim.builtin.nvimtree.setup.view.width = 25
 lvim.builtin.nvimtree.setup.renderer.icons.show.git = false
 
 lvim.builtin.telescope.pickers.buffers.initial_mode = "normal"
+lvim.builtin.telescope.pickers.live_grep.layout_config = {
+  width = 0.8,
+  height = 0.5,
+}
 
 -- if you don't want all the parsers change this to a table of the ones you want
 lvim.builtin.treesitter.ensure_installed = {
@@ -465,10 +585,21 @@ vim.filetype.add({
   }
 })
 
-vim.treesitter.language.register('vue', 'mpx')
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+parser_config.mpx = {
+  install_info = {
+    url = "~/tree-sitter-mpx",
+    files = { "src/parser.c", "src/scanner.cc" },
+  },
+  filetype = "mpx", -- if filetype does not match the parser name
+}
+
+vim.treesitter.language.register('mpx', 'mpx')
+-- vim.treesitter.language.register('vue', 'mpx')
 vim.treesitter.language.register('javascript', 'wxs')
 
 local configs = require('lspconfig.configs')
+
 if not configs.mpx_ls then
   configs.mpx_ls = {
     default_config = {
@@ -483,6 +614,11 @@ lspconfig.mpx_ls.setup{
   cmd = { 'vls' },
   filetypes = { 'mpx' },
   root_dir = root_pattern('package.json'),
+  on_init = function(client, initialization_result)
+    if client.server_capabilities then
+      client.server_capabilities.semanticTokensProvider = false  -- turn off semantic tokens for lsp highlighting
+    end
+  end,
   on_attach = function(client, bufnr)
     --[[
         Internal Vetur formatting is not supported out of the box
@@ -698,7 +834,41 @@ lvim.plugins = {
   reload('user.extra-plugins.pretty-fold'),
 
   -- toggle code join
-  reload('user.extra-plugins.treesj'),
+  -- reload('user.extra-plugins.treesj'),
+  {
+    "Wansmer/treesj",
+    dependencies = { 'nvim-treesitter' },
+    config = function()
+      local lang_utils = require('treesj.langs.utils')
+      local html = require('treesj.langs.html')
+      require("treesj").setup({
+        -- Use default keymaps
+        -- (<space>m - toggle, <space>j - join, <space>s - split)
+        use_default_keymaps = false,
+        -- Node with syntax error will not be formatted
+        check_syntax_error = true,
+        -- If line after join will be longer than max value,
+        -- node will not be formatted
+        max_join_length = 300,
+        -- hold|start|end:
+        -- hold - cursor follows the node/place on which it was called
+        -- start - cursor jumps to the first symbol of the node being formatted
+        -- end - cursor jumps to the last symbol of the node being formatted
+        cursor_behavior = 'hold',
+        -- Notify about possible problems or not
+        notify = true,
+        langs = {
+          mpx = lang_utils.merge_preset(html, {
+            element = {
+              join = {
+                recursive = false,
+              },
+            },
+          })
+        },
+      })
+    end,
+  },
 
   -- provide a quick way of going back to normal mode under insert mode
   reload('user.extra-plugins.better-escape'),
@@ -752,7 +922,15 @@ lvim.plugins = {
     config = function()
       require("lsp_lines").setup()
       vim.diagnostic.config({
+        signs = false,
+        underline = true,
         virtual_text = false,
+        virtual_lines = true,
+        update_in_insert = false,
+        float = {
+          border = 'rounded',
+          focusable = true
+        }
       })
     end,
   },
@@ -822,7 +1000,7 @@ lvim.plugins = {
           ["select_down"] = "<C-j>",
         },
         use_api_key_from_config = true,
-        openai_api_key = "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",
+        openai_api_key = "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",
         open_api_key_env = "OPENAI_API_KEY",
         proxy_url = "localhost:7890",
         shortcuts = {
@@ -1128,25 +1306,6 @@ lvim.plugins = {
           -- standalone file support
           -- setting it to false may improve startup time
           standalone = true,
-          on_attach = function(client, bufnr)
-            require("lvim.lsp").common_on_attach(client, bufnr)
-            -- Hover actions
-            vim.keymap.set("n", "K", rt.hover_actions.hover_actions, { buffer = bufnr })
-          end,
-          on_init = require("lvim.lsp").common_on_init,
-          capabilities = require("lvim.lsp").common_capabilities(),
-          settings = {
-            ["rust-analyzer"] = {
-              inlayHints = { locationLinks = false },
-              lens = {
-                enable = true,
-              },
-              checkOnSave = {
-                enable = true,
-                command = "clippy",
-              },
-            },
-          },
         }, -- rust-analyzer options
 
         -- debugging stuff
@@ -1159,7 +1318,65 @@ lvim.plugins = {
         },
       })
     end
-  }
+  },
+  {
+    'APZelos/blamer.nvim',
+    config = function ()
+      vim.g.blamer_enabled = true
+      vim.g.blamer_delay = 500
+      vim.g.blamer_show_in_visual_mode = 0
+      vim.g.blamer_show_in_insert_mode = 0
+      vim.g.blamer_prefix = ' -> '
+      -- vim.g.blamer_template = '<committer>, <committer-time> • <summary>'
+      vim.g.blamer_date_format = '%y/%m/%d - %H:%M'
+      vim.g.blamer_relative_time = 1
+    end
+  },
+  {
+    'echasnovski/mini.align',
+    version = '*',
+    config = function ()
+      require('mini.align').setup()
+    end
+  },
+  {
+    'chrisgrieser/nvim-scissors',
+    dependencies = "nvim-telescope/telescope.nvim", -- optional
+    opts = {
+      snippetDir = "~/.config/lvim/snippets",
+    },
+    config = function ()
+      -- default settings
+      require("scissors").setup {
+        snippetDir = vim.fn.stdpath("config") .. "/snippets",
+        editSnippetPopup = {
+          height = 0.4, -- relative to the window, number between 0 and 1
+          width = 0.6,
+          border = "rounded",
+          keymaps = {
+            cancel = "q",
+            saveChanges = "<CR>", -- alternatively, can also use `:w`
+            goBackToSearch = "<BS>",
+            deleteSnippet = "<C-BS>",
+            duplicateSnippet = "<C-d>",
+            openInFile = "<C-o>",
+            insertNextToken = "<C-t>", -- insert & normal mode
+            jumpBetweenBodyAndPrefix = "<Tab>", -- insert & normal mode
+          },
+        },
+        telescope = {
+          -- By default, the query only searches snippet prefixes. Set this to
+          -- `true` to also search the body of the snippets.
+          alsoSearchSnippetBody = false,
+        },
+        -- `none` writes as a minified json file using `vim.encode.json`.
+        -- `yq`/`jq` ensure formatted & sorted json files, which is relevant when
+        -- you version control your snippets.
+        jsonFormatter = "none", -- "yq"|"jq"|"none"
+      }
+    end
+  },
+  reload('user.extra-plugins.diffview'),
 }
 
 -- this is a comment
@@ -1190,6 +1407,7 @@ vim.api.nvim_create_autocmd('CursorHold', {
   pattern = '*',
   command = 'checktime'
 })
+
 -- vim.o.updatetime = 250
 vim.api.nvim_create_autocmd('CursorHold', {
   buffer = bufnr,
@@ -1211,6 +1429,58 @@ vim.api.nvim_create_autocmd('CursorHold', {
     vim.diagnostic.open_float(nil, opts)
   end
 })
+
+-- local showBlameVirtualText = function()
+--   local ft = vim.fn.expand('%:h:t') -- get the current file extension
+--   local api = vim.api
+--   if ft == '' then -- if we are in a scratch buffer or unknown filetype
+--     return
+--   end
+--   if ft == 'bin' then -- if we are in nvim's terminal window
+--     return
+--   end
+--   api.nvim_buf_clear_namespace(0, 2, 0, -1) -- clear out virtual text from namespace 2 (the namespace we will set later)
+--   local currFile = vim.fn.expand('%')
+--   local line = api.nvim_win_get_cursor(0)
+--   local blame = vim.fn.system(string.format('git blame -c -L %d,%d %s', line[1], line[1], currFile))
+--   local hash = vim.split(blame, '%s')[1]
+--   local cmd = string.format("git show %s ", hash).."--format='%an | %ar | %s'"
+--   local text
+--   if hash == '00000000' then
+--     text = 'Not Committed Yet'
+--   else
+--     text = vim.fn.system(cmd)
+--     text = vim.split(text, '\n')[1]
+--     if text:find("fatal") then -- if the call to git show fails
+--       text = 'Not Committed Yet'
+--     end
+--   end
+--   text = '    ' .. text
+--   api.nvim_buf_set_virtual_text(0, 2, line[1] - 1, {{ text,'GitLens' }}, {}) -- set virtual text for namespace 2 with the content from git and assign it to the higlight group 'GitLens'
+-- end
+
+-- local clearBlameVirtualText = function ()
+--   vim.api.nvim_buf_clear_namespace(0, 2, 0, -1)
+-- end
+
+-- local gitlens_aug_id = vim.api.nvim_create_augroup('GitLens', { clear = true })
+-- vim.api.nvim_set_hl(0, 'GitLens', { fg = '#575F86', bg = '#2A2E40' })
+
+-- vim.api.nvim_create_autocmd('CursorHold', {
+--   pattern = '*',
+--   callback = showBlameVirtualText,
+--   group = gitlens_aug_id
+-- })
+-- vim.api.nvim_create_autocmd('CursorMoved', {
+--   pattern = '*',
+--   callback = clearBlameVirtualText,
+--   group = gitlens_aug_id
+-- })
+-- vim.api.nvim_create_autocmd('CursorMovedI', {
+--   pattern = '*',
+--   callback = clearBlameVirtualText,
+--   group = gitlens_aug_id
+-- })
 
 -- -- Debugging
 -- -- =============================

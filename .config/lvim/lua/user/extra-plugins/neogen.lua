@@ -5,7 +5,7 @@ return {
       snippet_engine = "luasnip"
     }
   end,
-  requires = "nvim-treesitter/nvim-treesitter",
+  dependencies = "nvim-treesitter/nvim-treesitter",
   -- Uncomment next line if you want to follow only stable versions
   -- tag = "*"
 }

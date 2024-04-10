@@ -1,4 +1,4 @@
-local helpers = require('ts-node-action.helpers')
+-- local helpers = require('ts-node-action.helpers')
 
 local map = {
   ['const'] = 'let',
@@ -7,7 +7,7 @@ local map = {
 
 return {
   'ckolkey/ts-node-action',
-  requires = { 'nvim-treesitter' },
+  dependencies = { 'nvim-treesitter' },
   config = function() -- Optional
     require("ts-node-action").setup({
       ['*'] = {

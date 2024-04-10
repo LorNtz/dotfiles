@@ -1,6 +1,6 @@
 return {
   "folke/noice.nvim",
-  disable = false,
+  enabled = true,
   config = function ()
     require('noice').setup({
       cmdline = {
@@ -120,7 +120,8 @@ return {
           ["cmp.entry.get_documentation"] = false,
         },
         hover = {
-          enabled = false,
+          enabled = true,
+          silent = false, -- set to true to not show a message if hover is not available
           view = nil, -- when nil, use defaults from documentation
           ---@type NoiceViewOptions
           opts = {}, -- merged with defaults from documentation
@@ -200,7 +201,7 @@ return {
       format = {}, --- @see section on formatting
     })
   end,
-  requires = {
+  dependencies = {
     'MunifTanjim/nui.nvim',
     'rcarriga/nvim-notify',
   }

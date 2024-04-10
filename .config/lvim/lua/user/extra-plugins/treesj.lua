@@ -1,6 +1,9 @@
+local lang_utils = require('treesj.langs.utils')
+local html = require('treesj.langs.html')
+
 return {
   "Wansmer/treesj",
-  requires = { 'nvim-treesitter' },
+  dependencies = { 'nvim-treesitter' },
   config = function()
     require("treesj").setup({
       -- Use default keymaps
@@ -10,7 +13,7 @@ return {
       check_syntax_error = true,
       -- If line after join will be longer than max value,
       -- node will not be formatted
-      max_join_length = 120,
+      max_join_length = 300,
       -- hold|start|end:
       -- hold - cursor follows the node/place on which it was called
       -- start - cursor jumps to the first symbol of the node being formatted
@@ -18,7 +21,15 @@ return {
       cursor_behavior = 'hold',
       -- Notify about possible problems or not
       notify = true,
-      -- langs = {},
+      langs = {
+        mpx = lang_utils.merge_preset(html, {
+          element = {
+            join = {
+              recursive = false,
+            },
+          },
+        })
+      },
     })
   end,
 }

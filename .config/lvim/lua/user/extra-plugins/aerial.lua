@@ -1,5 +1,6 @@
 return {
   'stevearc/aerial.nvim',
+  enabled = false,
   config = function()
     -- Call the setup function to change the default behavior
     local aerial = require("aerial")
