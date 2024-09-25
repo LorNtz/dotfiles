@@ -6,14 +6,17 @@ local config = {}
 if wezterm.config_builder then config = wezterm.config_builder() end
 
 -- Settings
--- config.color_scheme = "Tokyo Night"
+config.default_prog = { '/usr/local/bin/fish' }
+config.color_scheme = "Tokyo Night"
 -- config.color_scheme = "Atelier Lakeside (base16)"
-config.color_scheme = "Ayu Mirage"
+-- config.color_scheme = "Ayu Mirage"
+config.force_reverse_video_cursor = true
 config.font = wezterm.font_with_fallback({
   { family = "CaskaydiaCove Nerd Font",  scale = 1.2 },
   { family = "FantasqueSansM Nerd Font", scale = 1.2 },
 })
-config.window_background_opacity = 0.8
+config.font_size = 14.0
+config.window_background_opacity = 1
 config.window_decorations = "RESIZE"
 config.window_close_confirmation = "AlwaysPrompt"
 config.scrollback_lines = 3000

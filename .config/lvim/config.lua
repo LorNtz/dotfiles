@@ -31,6 +31,9 @@ vim.keymap.set({ 'i', 's' }, '<C-h>', function ()
   end
 end, { silent = true })
 
+-- prevent * searching from jumping to next match
+vim.keymap.set({ 'n' }, '*', "<cmd>let @/= '\\<' . expand('<cword>') . '\\>' <bar> set hls <cr>")
+
 -- general
 lvim.log.level = "warn"
 lvim.format_on_save.enabled = false
@@ -135,6 +138,9 @@ lvim.builtin.which_key.mappings["A"] = {
 lvim.builtin.which_key.mappings["b"].F = {
   "<cmd>tabe %<cr>", "Open this buffer in new tab"
 }
+lvim.builtin.which_key.mappings["b"]["<tab>"] = {
+  "<cmd>b#<cr>", "Switch to most recent buffer"
+}
 lvim.builtin.which_key.mappings["b"]["v"] = {
   "<cmd>vsplit<cr>", "Vertical split"
 }
@@ -157,9 +163,9 @@ lvim.builtin.which_key.mappings["D"] = {
 local last_pattern = ''
 local last_include_dir = 'src'
 local last_glob = '*'
-local find_text_occurrence = function ()
+local find_text_occurrence = function (pattern)
   vim.ui.input(
-    { prompt = 'Search Pattern?', default = last_pattern },
+    { prompt = 'Search Pattern?', default = pattern or last_pattern },
     function (pattern)
       if pattern == nil or pattern == '' then
         return
@@ -465,6 +471,17 @@ lvim.builtin.which_key.vmappings["s"] = {
       )
     end)
   end, "Silicon Snapshot"
+}
+
+lvim.builtin.which_key.vmappings["f"] = {
+  function ()
+    vim.api.nvim_feedkeys('"vy', 'n', false)
+    vim.schedule(function ()
+      local text = vim.fn.getreg('v')
+      find_text_occurrence(text)
+    end)
+  end,
+  "Search for selected text"
 }
 
 -- TODO: User Config for predefined plugins
@@ -1037,6 +1054,12 @@ lvim.plugins = {
     end
   },
   {
+    "grapp-dev/nui-components.nvim",
+    dependencies = {
+      "MunifTanjim/nui.nvim"
+    }
+  },
+  {
     "dvoytik/hi-my-words.nvim",
     config = function ()
       require("hi-my-words").setup({
@@ -1339,45 +1362,309 @@ lvim.plugins = {
       require('mini.align').setup()
     end
   },
+  -- WARN: nvim-scissors now requires neovim 0.10
+  -- {
+  --   'chrisgrieser/nvim-scissors',
+  --   dependencies = "nvim-telescope/telescope.nvim", -- optional
+  --   opts = {
+  --     snippetDir = "~/.config/lvim/snippets",
+  --   },
+  --   config = function ()
+  --     -- default settings
+  --     require("scissors").setup {
+  --       snippetDir = vim.fn.stdpath("config") .. "/snippets",
+  --       editSnippetPopup = {
+  --         height = 0.4, -- relative to the window, number between 0 and 1
+  --         width = 0.6,
+  --         border = "rounded",
+  --         keymaps = {
+  --           cancel = "q",
+  --           saveChanges = "<CR>", -- alternatively, can also use `:w`
+  --           goBackToSearch = "<BS>",
+  --           deleteSnippet = "<C-BS>",
+  --           duplicateSnippet = "<C-d>",
+  --           openInFile = "<C-o>",
+  --           insertNextToken = "<C-t>", -- insert & normal mode
+  --           jumpBetweenBodyAndPrefix = "<Tab>", -- insert & normal mode
+  --         },
+  --       },
+  --       telescope = {
+  --         -- By default, the query only searches snippet prefixes. Set this to
+  --         -- `true` to also search the body of the snippets.
+  --         alsoSearchSnippetBody = false,
+  --       },
+  --       -- `none` writes as a minified json file using `vim.encode.json`.
+  --       -- `yq`/`jq` ensure formatted & sorted json files, which is relevant when
+  --       -- you version control your snippets.
+  --       jsonFormatter = "none", -- "yq"|"jq"|"none"
+  --     }
+  --   end
+  -- },
+  reload('user.extra-plugins.diffview'),
   {
-    'chrisgrieser/nvim-scissors',
-    dependencies = "nvim-telescope/telescope.nvim", -- optional
-    opts = {
-      snippetDir = "~/.config/lvim/snippets",
+    'b0o/nvim-tree-preview.lua',
+    dependencies = {
+      'nvim-lua/plenary.nvim'
     },
     config = function ()
-      -- default settings
-      require("scissors").setup {
-        snippetDir = vim.fn.stdpath("config") .. "/snippets",
-        editSnippetPopup = {
-          height = 0.4, -- relative to the window, number between 0 and 1
-          width = 0.6,
-          border = "rounded",
-          keymaps = {
-            cancel = "q",
-            saveChanges = "<CR>", -- alternatively, can also use `:w`
-            goBackToSearch = "<BS>",
-            deleteSnippet = "<C-BS>",
-            duplicateSnippet = "<C-d>",
-            openInFile = "<C-o>",
-            insertNextToken = "<C-t>", -- insert & normal mode
-            jumpBetweenBodyAndPrefix = "<Tab>", -- insert & normal mode
-          },
+      local preview = require'nvim-tree-preview'
+
+      -- Default config:
+      preview.setup {
+        -- Keymaps for the preview window (does not apply to the tree window).
+        -- Keymaps can be a string (vimscript command), a function, or a table.
+        --
+        -- If a table, it must contain either an 'action' or 'open' key:
+        --
+        -- Actions:
+        --   { action = 'close', unwatch? = false, focus_tree? = true }
+        --   { action = 'toggle_focus' }
+        --
+        -- Open modes:
+        --   { open = 'edit' }
+        --   { open = 'tab' }
+        --   { open = 'vertical' }
+        --   { open = 'horizontal' }
+        --
+        -- To disable a default keymap, set it to false.
+        -- All keymaps are set in normal mode. Other modes are not currently supported.
+        keymaps = {
+          ['<Esc>'] = { action = 'close', unwatch = true },
+          ['<Tab>'] = { action = 'toggle_focus' },
+          ['<CR>'] = { open = 'edit' },
+          ['<C-t>'] = { open = 'tab' },
+          ['<C-v>'] = { open = 'vertical' },
+          ['<C-x>'] = { open = 'horizontal' },
         },
-        telescope = {
-          -- By default, the query only searches snippet prefixes. Set this to
-          -- `true` to also search the body of the snippets.
-          alsoSearchSnippetBody = false,
-        },
-        -- `none` writes as a minified json file using `vim.encode.json`.
-        -- `yq`/`jq` ensure formatted & sorted json files, which is relevant when
-        -- you version control your snippets.
-        jsonFormatter = "none", -- "yq"|"jq"|"none"
+        min_width = 10,
+        min_height = 5,
+        max_width = 85,
+        max_height = 25,
+        wrap = false, -- Whether to wrap lines in the preview window
+        border = 'rounded', -- Border style for the preview window
       }
     end
   },
-  reload('user.extra-plugins.diffview'),
+  {
+    'yujinyuz/gitpad.nvim',
+    config = function()
+      require('gitpad').setup({
+        title = 'Note', -- The title of the floating window
+        border = 'rounded', -- The border style of the floating window. Possible values are `'single'`, `'double'`, `'shadow'`, `'rounded'`, and `''` (no border).
+        style = '', -- The style of the floating window. Possible values are `'minimal'` (no line numbers, statusline, or sign column. See :help nvim_open_win() '), and `''` (default Neovim style).
+        dir = vim.fn.stdpath('data') .. '/gitpad', -- The directory where the notes are stored. Possible value is a valid path ie '~/notes'
+        default_text = '', -- Leave this nil if you want to use the default text
+        on_attach = function(bufnr)
+          -- You can also define a function to be called when the gitpad window is opened, by setting the `on_attach` option:
+          -- This is just an example
+          vim.api.nvim_buf_set_keymap(bufnr, 'n', 'q', '<Cmd>wq<CR>', { noremap = true, silent = true })
+        end,
+      })
+    end,
+    keys = {
+      {
+        '<leader>.p',
+        function()
+          require('gitpad').toggle_gitpad() -- or require('gitpad').toggle_gitpad({ title = 'Project notes' })
+        end,
+        desc = 'gitpad project',
+      },
+      {
+        '<leader>.b',
+        function()
+          require('gitpad').toggle_gitpad_branch() -- or require('gitpad').toggle_gitpad_branch({ title = 'Branch notes' })
+        end,
+        desc = 'gitpad branch',
+      },
+      -- Daily notes
+      {
+        '<leader>.d',
+        function()
+          local date_filename = 'daily-' .. os.date('%Y-%m-%d.md')
+          require('gitpad').toggle_gitpad({ filename = date_filename }) -- or require('gitpad').toggle_gitpad({ filename = date_filename, title = 'Daily notes' })
+        end,
+        desc = 'gitpad daily notes',
+      },
+      -- Per file notes
+      {
+        '<leader>.f',
+        function()
+          local filename = vim.fn.expand('%:p') -- or just use vim.fn.bufname()
+          if filename == '' then
+            vim.notify('empty bufname')
+            return
+          end
+          filename = vim.fn.pathshorten(filename, 2) .. '.md'
+          require('gitpad').toggle_gitpad({ filename = filename }) -- or require('gitpad').toggle_gitpad({ filename = filename, title = 'Current file notes' })
+        end,
+        desc = 'gitpad per file notes',
+      },
+    },
+  },
+  {
+    "mistricky/codesnap.nvim",
+    build = "make build_generator",
+    keys = {
+      { "<leader>Occ", "<Esc><cmd>CodeSnap<cr>", mode = "x", desc = "Take a snapshot of selected code and save to clipboard" },
+      { "<leader>Ocs", "<cmd>CodeSnapSave<cr>", mode = "x", desc = "Take a snapshot of selected code and save to desktop" },
+      { "<leader>Ochc", "<cmd>CodeSnapHighlight<cr>", mode = "x", desc = "Take a snapshot of selected code and save to clipboard" },
+      { "<leader>Ochs", "<cmd>CodeSnapSaveHighlight<cr>", mode = "x", desc = "Take a snapshot of selected code and save to desktop" },
+      { "<leader>Ocs", "<cmd>CodeSnapASCII<cr>", mode = "x", desc = "Take a ascii snapshot of selected code and save to clipboard" },
+    },
+    opts = {
+      save_path = "~/Desktop",
+      mac_window_bar = true,
+      title = "CodeSnap.nvim",
+      code_font_family = "CaskaydiaCove Nerd Font",
+      watermark_font_family = "Pacifico",
+      watermark = "",
+      bg_theme = "default",
+      breadcrumbs_separator = "/",
+      has_breadcrumbs = true,
+      has_line_number = true,
+      show_workspace = true,
+      min_width = 0,
+      bg_x_padding = 0,
+      bg_y_padding = 0,
+    },
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+    commit = "55e13ca",
+    -- config = function ()
+    --   -- config for this plugin is attached to lvim.builtin.treesitter.textobjects (see below)
+    -- end
+  },
+  {
+    'aliqyan-21/wit.nvim',
+    config = function()
+      require('wit').setup({
+        search_engine = 'google' -- your preferred search engine name from the list
+        -- search_engine = "https://any_other_search_engine.com/search?q=" -- for any other search engine not in list you can define it's url directly
+
+        -- for example:
+        -- search_engine = "https://you.com/search?q=" -- defining the search url of you.com as it is not in the list
+      })
+    end
+  }
 }
+
+lvim.builtin.which_key.setup = {
+  plugins = {
+    marks = true,     -- shows a list of your marks on ' and `
+    registers = true, -- shows your registers on " in NORMAL or <C-r> in INSERT mode
+    -- the presets plugin, adds help for a bunch of default keybindings in Neovim
+    -- No actual key bindings are created
+    presets = { -- adds help for operators like d, y, ...
+      operators = {
+        v = false,
+        d = false,
+      },
+      motions = false,      -- adds help for motions
+      text_objects = false, -- help for text objects triggered after entering an operator
+      windows = false,      -- default bindings on <c-w>
+      nav = true,           -- misc bindings to work with windows
+      z = true,             -- bindings for folds, spelling and others prefixed with z
+      g = true,             -- bindings for prefixed with g
+    },
+  },
+  hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "call", "lua", "^:", "^ " }, -- hide mapping boilerplate
+  show_help = true,         -- show help message on the command line when the popup is visible
+}
+
+local ts = lvim.builtin.treesitter
+ts.textobjects = {
+  select = {
+    enable = true,
+
+    -- Automatically jump forward to textobj, similar to targets.vim
+    lookahead = true,
+
+    keymaps = {
+      -- You can use the capture groups defined in textobjects.scm
+      ['af'] = '@function.outer',
+      ['if'] = '@function.inner',
+      -- [''] = '@function'
+      -- You can optionally set descriptions to the mappings (used in the desc parameter of
+      -- nvim_buf_set_keymap) which plugins like which-key display
+      -- ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+      -- You can also use captures from other query groups like `locals.scm`
+      -- ["as"] = { query = "@scope", query_group = "locals", desc = "Select language scope" },
+    },
+    -- You can choose the select mode (default is charwise 'v')
+    --
+    -- Can also be a function which gets passed a table with the keys
+    -- * query_string: eg '@function.inner'
+    -- * method: eg 'v' or 'o'
+    -- and should return the mode ('v', 'V', or '<c-v>') or a table
+    -- mapping query_strings to modes.
+    selection_modes = {
+      ['@parameter.outer'] = 'v', -- charwise
+      ['@function.outer'] = 'V', -- linewise
+      ['@class.outer'] = '<c-v>', -- blockwise
+    },
+-- If you set this to `true` (default is `false`) then any textobject is
+    -- extended to include preceding or succeeding whitespace. Succeeding
+    -- whitespace has priority in order to act similarly to eg the built-in
+    -- `ap`.
+    --
+    -- Can also be a function which gets passed a table with the keys
+    -- * query_string: eg '@function.inner'
+    -- * selection_mode: eg 'v'
+    -- and should return true or false
+    include_surrounding_whitespace = true,
+  },
+  swap = {
+    enable = true,
+    swap_next = {
+      ["<leader>lAl"] = "@parameter.inner",
+    },
+    swap_previous = {
+      ["<leader>lAh"] = "@parameter.inner",
+    },
+  },
+}
+
+lvim.builtin.nvimtree.setup.on_attach = function(bufnr)
+  local preview = require'nvim-tree-preview'
+  local api = require "nvim-tree.api"
+  api.config.mappings.default_on_attach(bufnr)
+
+  local function opts(desc)
+    return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+  end
+
+  local nvimtree_keymaps = {
+    ["P"] = { preview.watch, opts 'Preview (Watch)' },
+    ["<Esc>"] = { preview.unwatch, opts 'Close Preview/Unwatch' },
+    ["<Tab>"] = { preview.node_under_cursor, opts 'Preview' },
+    ["l"] = { api.node.open.edit, opts "Open" },
+    ["o"] = { api.node.open.edit, opts "Open" },
+    ["<CR>"] = { api.node.open.edit, opts "Open" },
+    ["v"] = { api.node.open.vertical, opts "Open: Vertical Split" },
+    ["h"] = { api.node.navigate.parent_close, opts "Close Directory" },
+    ["C"] = { api.tree.change_root_to_node, opts "CD" },
+  }
+  require('lvim.keymappings').load_mode('n', nvimtree_keymaps)
+
+  -- vim.keymap.set('n', 'P', preview.watch, opts('Preview (Watch)'))
+-- vim.keymap.set('n', '<Esc>', preview.unwatch, opts('Close Preview/Unwatch'))
+
+  -- -- Option A: Simple tab behavior: Always preview
+  -- vim.keymap.set('n', '<Tab>', preview.node_under_cursor, opts('Preview'))
+
+  -- Option B: Smart tab behavior: Only preview files, expand/collapse directories.
+  -- vim.keymap.set('n', '<Tab>', function()
+  --   local ok, node = pcall(api.tree.get_node_under_cursor)
+  --   if ok and node then
+  --     if node.type == 'directory' then
+  --       api.node.open.edit()
+  --     else
+  --       preview.node(node, { toggle_focus = true })
+--     end
+--   end
+  -- end, opts 'Preview')
+end
 
 -- this is a comment
 -- lvim.builtin.lualine.sections.lualine_c = {

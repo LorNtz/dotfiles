@@ -103,7 +103,7 @@ return {
           { "n", "<C-w>gf",    actions.goto_file_tab,                 { desc = "Open the file in a new tabpage" } },
           { "n", "<leader>e",  actions.focus_files,                   { desc = "Bring focus to the file panel" } },
           { "n", "<leader>b",  actions.toggle_files,                  { desc = "Toggle the file panel." } },
-          { "n", "g<C-x>",     actions.cycle_layout,                  { desc = "Cycle through available layouts." } },
+          { "n", "<leader>l",     actions.cycle_layout,                  { desc = "Cycle through available layouts." } },
           { "n", "[x",         actions.prev_conflict,                 { desc =
           "In the merge-tool: jump to the previous conflict" } },
           { "n", "]x",         actions.next_conflict,                 { desc =
