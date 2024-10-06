@@ -11,7 +11,10 @@ require("nvim-treesitter.install").prefer_git = true
 
 local path = debug.getinfo(1, 'S').source
 local config_directory = string.match(path, '^(.*/).*.lua')
-package.path = package.path .. ';/Users/lorentz/.config/lvim/lua/user/?.lua'
+
+-- lua file paths
+-- package.path = package.path .. ';/Users/lorentz/.config/lvim/lua/user/?.lua'
+package.path = package.path .. ';/Users/didi/.config/lvim/lua/user/?.lua'
 
 local luasnip = require('luasnip')
 luasnip.filetype_extend('javascript', { 'javascriptreact' })
@@ -152,6 +155,11 @@ lvim.builtin.which_key.mappings["B"] = {
   a = { "<cmd>BookmarkAnnotate<cr>", "Add/edit/remove annotation bookmark" },
   t = { "<cmd>BookmarkToggle<cr>", "Toggle bookmark at current line" },
   l = { "<cmd>BookmarkShowAll<cr>", "List all bookmarks in quickfix" },
+  j = { "<cmd>BookmarkNext", "Jump to next bookmark" },
+  k = { "<cmd>BookmarkPrev", "Jump to previous bookmark" },
+  J = { "<cmd>BookmarkMoveDown", "Bookmark move down" },
+  K = { "<cmd>BookmarkMoveUp", "Bookmark move up" },
+  M = { "<cmd>BookmarkMoveToLine", "Move bookmark to line" }
 }
 lvim.builtin.which_key.mappings["D"] = {
   name = "+Diagnostics",
@@ -598,8 +606,20 @@ lsp_manager.setup('eslint', {
 vim.filetype.add({
   extension = {
     mpx = 'mpx',
-    wxs = 'javascript'
+    wxs = 'javascript',
+    axml = 'html',
+    acss = 'css'
   }
+})
+
+require('ts_context_commentstring').setup({
+  languages = {
+    typescript = { __default = '// %s', __multiline = '/* %s */' },
+    mpx = {
+      __default = '// %s',
+      template_element = '<!-- %s -->'
+    }
+  },
 })
 
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
@@ -614,6 +634,10 @@ parser_config.mpx = {
 vim.treesitter.language.register('mpx', 'mpx')
 -- vim.treesitter.language.register('vue', 'mpx')
 vim.treesitter.language.register('javascript', 'wxs')
+vim.treesitter.language.register('html', 'axml')
+vim.treesitter.language.register('css', 'acss')
+
+-- require('vim.treesitter.query').set('mpx', 'injections', '(attribute_value) @javascript')
 
 local configs = require('lspconfig.configs')
 

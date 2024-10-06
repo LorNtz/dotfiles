@@ -66,7 +66,7 @@ return {
       trig = 'wi',
       dscr = 'wxml conditional renderring if'
     },
-    fmt('wx:if="{{{{ {} }}}}{}"', {
+    fmt('wx:if="{{{{ {} }}}}"{}', {
       i(1),
       i(0)
     })
@@ -76,7 +76,7 @@ return {
       trig = 'wei',
       dscr = 'wxml conditional renderring else if'
     },
-    fmt('wx:elif="{{{{ {} }}}}{}"', {
+    fmt('wx:elif="{{{{ {} }}}}"{}', {
       i(1),
       i(0)
     })
@@ -86,7 +86,7 @@ return {
       trig = 'we',
       dscr = 'wxml conditional renderring else'
     },
-    fmt('wx:else {}"', {
+    fmt('wx:else{}', {
       i(0)
     })
   ),
@@ -95,8 +95,38 @@ return {
       trig = 'ws',
       dscr = 'wxml dynamic style binding'
     },
-    fmt('wx:style="{{{{ {} }}}}{}"', {
+    fmt('wx:style="{{{{ {} }}}}"{}', {
       i(1),
+      i(0)
+    })
+  ),
+  s(
+    {
+      trig = 'wc',
+      dscr = 'wxml dynamic classes'
+    },
+    fmt('wx:class="{{{{ {} }}}}"{}', {
+      i(1),
+      i(0)
+    })
+  ),
+  s(
+    {
+      trig = 'wf',
+      dscr = 'wxml list renderring'
+    },
+    fmt('wx:for="{{{{ {} }}}}"{}', {
+      i(1),
+      i(0)
+    })
+  ),
+  s(
+    {
+      trig = 'wk',
+      dscr = 'wxml list renderring key'
+    },
+    fmt('wx:key="{}"{}', {
+      i(1, '_'),
       i(0)
     })
   ),
@@ -106,6 +136,13 @@ return {
     'clog',
     fmt('console.log({})', {
       i(1)
+    })
+  ),
+  s(
+    'dbg',
+    fmt("console.log('debug: {}', {})", {
+      i(1),
+      i(0)
     })
   ),
   s(
@@ -160,4 +197,16 @@ return {
       i(0)
     })
   ),
+  s(
+    {
+      trig = 'as',
+      dscr = 'do assignment if right hand side is not empty'
+    },
+    fmt('{} && ({} = {}){}', {
+      i(1),
+      i(2),
+      rep(1),
+      i(0)
+    })
+  )
 }

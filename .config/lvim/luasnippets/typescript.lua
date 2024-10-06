@@ -6,6 +6,12 @@ return {
     })
   ),
   s(
+    'dbg',
+    fmt("console.log('debug:', {})", {
+      i(1)
+    })
+  ),
+  s(
     'ct',
     fmt('console.time({})', {
       i(0)
